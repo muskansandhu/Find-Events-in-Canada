@@ -1,0 +1,116 @@
+const { Component } = React;
+const { render, findDOMNode } = ReactDOM;
+
+class MultiSelect extends Component {
+  constructor(props) {
+    super(props);
+   this.state = {
+     selected: [],
+     open: false
+   };
+  }
+  handleChange(e) {
+    const select = findDOMNode(this.refs.selectWrapper);
+    const selected = select.querySelectorAll('input:checked');
+    const realSelect = select.parentNode.parentNode.querySelectorAll('[selected]');
+    const values = Array.prototype.map.call(selected, el => {
+      return {
+        name: el.value,
+        id: el.id
+      }
+    });
+    realSelect[0].value = values.map( value => {
+      return value.id
+    }).join(',');
+    this.setState({
+      selected: values,
+      open: false
+    });
+  }
+  buildGroup(group) {
+    return group.options.map( item => {
+      return (
+        <li>
+          <input
+            onChange={::this.handleChange}
+            type="checkbox" 
+            id={item.id} 
+            value={item.name}/>
+          <label 
+            htmlFor={item.id} 
+            className="item-label">
+            { item.name }
+          </label>
+        </li>
+      )
+    });
+  }
+  toggleMenu() {
+    this.setState({
+      open: !this.state.open
+    });
+  }
+  render() {
+    const {options} = this.props;
+    const {selected, open} = this.state;
+    return (
+      <div ref="selectWrapper" className={classNames('select-wrapper',{
+          open: open
+        })}>
+        {selected && 
+          <div className="select-value" onClick={::this.toggleMenu}>
+            {(selected.length < 1) &&
+              <span className="placeholder">
+                All
+              </span>
+            }
+            {selected.map( el => {
+            return (
+              <span key={el.id}>
+              <label 
+                htmlFor={el.id}>
+                { el.name }
+              </label>
+             </span>
+             )})}
+           </div>
+         }
+        {options && 
+         <div className="checkbox-wrapper" onClick={::this.toggleMenu}>
+         {options.map( group => {
+            return (
+              <ul>
+                <label>{group.group}</label>
+                {this.buildGroup(group)}
+              </ul>
+             )
+          })}
+        </div>
+        }
+      </div>
+    );    
+  }
+};
+
+const selectForms = document.querySelectorAll('[multiselect]');
+[].slice.call(selectForms).forEach( select => {
+  const mount = document.createElement('div');
+  mount.className = 'react-mount';
+  select.appendChild(mount);
+  let selectOptions = select.querySelectorAll('optgroup');
+  const options = Array.prototype.map.call(selectOptions, o => {
+    const items = o.querySelectorAll('option');
+    const formattedItems = Array.prototype.map.call( items, item => {
+      return {
+        name: item.innerText,
+        id: item.value 
+      }
+    })
+    return {
+      group: o.label,
+      options: formattedItems
+    };
+  });
+  render(<MultiSelect options={options}/>, mount);
+});
+
